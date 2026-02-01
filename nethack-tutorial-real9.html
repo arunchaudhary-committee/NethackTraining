@@ -1,0 +1,2127 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="mobile-web-app-capable" content="yes">
+  <title>NetHack Tutorial - Family Tournament Edition</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: #1a1a2e;
+      color: #eee;
+      height: 100vh;
+      height: 100dvh; /* Dynamic viewport height for mobile */
+      overflow: hidden;
+    }
+    
+    .container { display: flex; height: 100vh; height: 100dvh; }
+    
+    /* Game Area */
+    .game-area {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      min-width: 0;
+    }
+    
+    .game-header {
+      background: #16213e;
+      padding: 8px 16px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 2px solid #e94560;
+    }
+    
+    .game-header h1 { font-size: 18px; color: #e94560; }
+    .game-header .subtitle { font-size: 12px; color: #888; }
+    
+    .header-buttons { display: flex; gap: 8px; }
+    
+    .header-btn {
+      background: #0f3460;
+      color: #e94560;
+      border: 1px solid #e94560;
+      padding: 6px 14px;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 13px;
+    }
+    .header-btn:hover { background: #e94560; color: white; }
+    .header-btn.active { background: #e94560; color: white; }
+    
+    .header-btn.pulse {
+      animation: pulse 2s infinite;
+    }
+    @keyframes pulse {
+      0%, 100% { box-shadow: 0 0 0 0 rgba(233, 69, 96, 0.7); }
+      50% { box-shadow: 0 0 0 8px rgba(233, 69, 96, 0); }
+    }
+    
+    .game-frame-container {
+      flex: 1;
+      position: relative;
+      background: #000;
+    }
+    
+    .game-frame { width: 100%; height: 100%; border: none; }
+    
+    /* Click to focus */
+    .click-focus {
+      position: absolute;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background: rgba(0,0,0,0.85);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 8;
+      cursor: pointer;
+    }
+    .click-focus.hidden { display: none; }
+    .click-focus-box {
+      text-align: center;
+      padding: 30px;
+      background: #16213e;
+      border: 2px solid #e94560;
+      border-radius: 12px;
+    }
+    
+    /* Floating help button */
+    .floating-help-btn {
+      position: absolute;
+      top: 12px;
+      right: 12px;
+      background: #e94560;
+      color: white;
+      border: none;
+      padding: 10px 16px;
+      border-radius: 20px;
+      font-size: 13px;
+      font-weight: bold;
+      cursor: pointer;
+      z-index: 6;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.4);
+      animation: pulse-help 2s infinite;
+    }
+    .floating-help-btn:hover {
+      background: #ff6b6b;
+      transform: scale(1.05);
+    }
+    .floating-help-btn.hidden { display: none; }
+    @keyframes pulse-help {
+      0%, 100% { box-shadow: 0 4px 12px rgba(233, 69, 96, 0.4); }
+      50% { box-shadow: 0 4px 20px rgba(233, 69, 96, 0.8); }
+    }
+    
+    /* Start Overlay */
+    .game-overlay {
+      position: absolute;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background: rgba(0,0,0,0.95);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 10;
+      padding: 20px;
+      overflow-y: auto;
+    }
+    .game-overlay.hidden { display: none; }
+    
+    .start-box {
+      background: #16213e;
+      border: 2px solid #e94560;
+      border-radius: 12px;
+      padding: 24px;
+      max-width: 600px;
+    }
+    
+    .start-box h2 { color: #e94560; font-size: 24px; margin-bottom: 12px; text-align: center; }
+    .start-box p { margin-bottom: 10px; line-height: 1.5; color: #ccc; font-size: 14px; }
+    
+    .start-box .goal {
+      background: #0f3460;
+      padding: 12px;
+      border-radius: 8px;
+      margin: 12px 0;
+      border-left: 4px solid #4ade80;
+    }
+    .start-box .goal strong { color: #4ade80; }
+    
+    .start-box .setup-box {
+      background: #7c2d12;
+      border: 1px solid #ea580c;
+      padding: 14px;
+      border-radius: 8px;
+      margin: 12px 0;
+    }
+    .start-box .setup-box h3 { color: #fb923c; font-size: 14px; margin-bottom: 8px; }
+    .start-box .setup-box p { color: #fed7aa; font-size: 13px; margin-bottom: 4px; }
+    .start-box .setup-box ol { color: #fed7aa; font-size: 13px; margin-left: 20px; margin-top: 8px; }
+    .start-box .setup-box li { margin: 4px 0; }
+    .start-box .setup-box code { background: rgba(0,0,0,0.3); padding: 2px 5px; border-radius: 3px; }
+    
+    .start-box .tips {
+      background: #1a1a2e;
+      padding: 12px;
+      border-radius: 8px;
+      margin: 12px 0;
+      font-size: 13px;
+    }
+    .start-box .tips strong { color: #e94560; }
+    .start-box .tips li { margin: 4px 0; margin-left: 20px; }
+    
+    .start-btn {
+      background: #e94560;
+      color: white;
+      border: none;
+      padding: 14px 32px;
+      font-size: 16px;
+      border-radius: 8px;
+      cursor: pointer;
+      display: block;
+      margin: 16px auto 0;
+      -webkit-tap-highlight-color: rgba(255,107,107,0.3);
+      touch-action: manipulation;
+      user-select: none;
+      -webkit-user-select: none;
+    }
+    .start-btn:hover, .start-btn:active { background: #ff6b6b; }
+    
+    /* Floating Tip */
+    .floating-tip {
+      position: absolute;
+      bottom: 16px;
+      left: 16px;
+      right: 360px;
+      background: rgba(22, 33, 62, 0.97);
+      border: 2px solid #e94560;
+      border-radius: 10px;
+      padding: 12px 16px;
+      z-index: 5;
+      display: none;
+      animation: slideUp 0.3s ease;
+    }
+    .floating-tip.show { display: block; }
+    
+    @keyframes slideUp {
+      from { transform: translateY(20px); opacity: 0; }
+      to { transform: translateY(0); opacity: 1; }
+    }
+    
+    .tip-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 8px;
+    }
+    .tip-title { color: #e94560; font-weight: bold; font-size: 14px; }
+    .tip-close {
+      background: none;
+      border: none;
+      color: #666;
+      cursor: pointer;
+      font-size: 20px;
+      line-height: 1;
+    }
+    .tip-close:hover { color: #fff; }
+    
+    .tip-content { color: #ddd; font-size: 13px; line-height: 1.5; }
+    .tip-content code {
+      background: #0f3460;
+      padding: 2px 6px;
+      border-radius: 3px;
+      color: #e94560;
+    }
+    
+    .tip-nav {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-top: 10px;
+      padding-top: 10px;
+      border-top: 1px solid #0f3460;
+    }
+    .tip-nav button {
+      background: #0f3460;
+      color: #e94560;
+      border: 1px solid #e94560;
+      padding: 5px 12px;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 11px;
+    }
+    .tip-nav button:hover { background: #e94560; color: white; }
+    .tip-nav span { color: #666; font-size: 11px; }
+    
+    /* Sidebar */
+    .tutorial-sidebar {
+      width: 340px;
+      background: #16213e;
+      display: flex;
+      flex-direction: column;
+      border-left: 2px solid #0f3460;
+    }
+    .tutorial-sidebar.collapsed { width: 0; overflow: hidden; border-left: none; }
+    
+    .sidebar-header {
+      background: #0f3460;
+      padding: 10px 14px;
+      border-bottom: 1px solid #1a1a2e;
+    }
+    .sidebar-header h2 { color: #e94560; font-size: 15px; margin-bottom: 8px; text-align: center; }
+    
+    /* Search box */
+    .search-box {
+      position: relative;
+    }
+    .search-box input {
+      width: 100%;
+      padding: 8px 30px 8px 10px;
+      border: 1px solid #333;
+      border-radius: 6px;
+      background: #1a1a2e;
+      color: #eee;
+      font-size: 12px;
+    }
+    .search-box input:focus {
+      outline: none;
+      border-color: #e94560;
+    }
+    .search-box input::placeholder {
+      color: #666;
+    }
+    .search-clear {
+      position: absolute;
+      right: 6px;
+      top: 50%;
+      transform: translateY(-50%);
+      background: none;
+      border: none;
+      color: #666;
+      font-size: 16px;
+      cursor: pointer;
+      display: none;
+    }
+    .search-clear.show {
+      display: block;
+    }
+    .search-clear:hover {
+      color: #e94560;
+    }
+    
+    /* Search results */
+    .search-results {
+      flex: 1;
+      overflow-y: auto;
+      background: #12121a;
+    }
+    .search-results.hidden {
+      display: none;
+    }
+    .search-results-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 8px 12px;
+      background: #1a1a2e;
+      border-bottom: 1px solid #333;
+      font-size: 11px;
+    }
+    .search-results-header span {
+      color: #888;
+    }
+    .search-back {
+      background: none;
+      border: none;
+      color: #e94560;
+      cursor: pointer;
+      font-size: 11px;
+    }
+    .search-back:hover {
+      text-decoration: underline;
+    }
+    .search-results-list {
+      padding: 8px;
+    }
+    .search-result-item {
+      background: #1a1a2e;
+      border-radius: 6px;
+      padding: 10px;
+      margin-bottom: 8px;
+      cursor: pointer;
+      border-left: 3px solid #333;
+    }
+    .search-result-item:hover {
+      border-left-color: #e94560;
+      background: #0f3460;
+    }
+    .search-result-item .category {
+      font-size: 9px;
+      color: #666;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      margin-bottom: 4px;
+    }
+    .search-result-item .title {
+      color: #e94560;
+      font-size: 12px;
+      font-weight: bold;
+      margin-bottom: 4px;
+    }
+    .search-result-item .preview {
+      color: #888;
+      font-size: 11px;
+      line-height: 1.4;
+    }
+    .search-result-item .preview mark {
+      background: #e94560;
+      color: white;
+      padding: 0 2px;
+      border-radius: 2px;
+    }
+    .search-no-results {
+      text-align: center;
+      padding: 24px;
+      color: #666;
+      font-size: 13px;
+    }
+    
+    /* Main content container */
+    .sidebar-main-content {
+      display: flex;
+      flex-direction: column;
+      flex: 1;
+      overflow: hidden;
+    }
+    .sidebar-main-content.hidden {
+      display: none;
+    }
+
+    /* Tabs */
+    .sidebar-tabs {
+      display: flex;
+      background: #0f3460;
+    }
+    .sidebar-tab {
+      flex: 1;
+      padding: 10px 8px;
+      text-align: center;
+      cursor: pointer;
+      font-size: 11px;
+      color: #888;
+      border-bottom: 2px solid transparent;
+    }
+    .sidebar-tab:hover { color: #ccc; background: rgba(233,69,96,0.1); }
+    .sidebar-tab.active { color: #e94560; border-bottom-color: #e94560; }
+    
+    .tab-content { display: none; flex: 1; overflow-y: auto; flex-direction: column; }
+    .tab-content.active { display: flex; }
+    
+    /* Progress */
+    .progress-section {
+      padding: 10px 12px;
+      background: #0f3460;
+      border-bottom: 1px solid #1a1a2e;
+    }
+    .progress-title { font-size: 11px; color: #888; margin-bottom: 5px; }
+    .progress-bar {
+      height: 8px;
+      background: #1a1a2e;
+      border-radius: 4px;
+      overflow: hidden;
+      margin-bottom: 5px;
+    }
+    .progress-fill {
+      height: 100%;
+      background: linear-gradient(90deg, #e94560, #ff6b6b);
+      transition: width 0.3s;
+    }
+    .progress-text { font-size: 10px; color: #e94560; }
+    
+    /* Lessons */
+    .lessons-container { flex: 1; overflow-y: auto; padding: 8px; }
+    
+    .lesson-card {
+      background: #1a1a2e;
+      border-radius: 6px;
+      margin-bottom: 6px;
+      border: 1px solid #0f3460;
+    }
+    .lesson-card.completed { opacity: 0.5; }
+    .lesson-card.active { border-color: #e94560; }
+    
+    .lesson-header {
+      padding: 10px;
+      cursor: pointer;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .lesson-header:hover { background: #0f3460; }
+    
+    .lesson-title { font-size: 12px; font-weight: 600; display: flex; align-items: center; gap: 6px; }
+    .lesson-check { color: #4ade80; font-size: 14px; }
+    
+    .lesson-content {
+      padding: 0 10px 10px;
+      font-size: 11px;
+      line-height: 1.5;
+      color: #ccc;
+      display: none;
+    }
+    .lesson-content.expanded { display: block; }
+    .lesson-content code {
+      background: #0f3460;
+      padding: 1px 4px;
+      border-radius: 3px;
+      color: #e94560;
+      font-family: monospace;
+    }
+    .lesson-content pre {
+      background: #0f3460;
+      padding: 8px;
+      border-radius: 4px;
+      margin: 6px 0;
+      font-family: monospace;
+      font-size: 10px;
+      overflow-x: auto;
+    }
+    .lesson-content .tip {
+      background: #2d1f3d;
+      border-left: 3px solid #e94560;
+      padding: 6px 8px;
+      margin: 6px 0;
+      font-size: 10px;
+    }
+    
+    .mark-done-btn {
+      background: #0f3460;
+      color: #e94560;
+      border: 1px solid #e94560;
+      padding: 6px 10px;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 10px;
+      margin-top: 6px;
+      width: 100%;
+    }
+    .mark-done-btn:hover { background: #e94560; color: white; }
+    
+    /* Messages Tab - improved readability */
+    .messages-container { flex: 1; overflow-y: auto; padding: 12px; }
+    
+    .msg-group { margin-bottom: 16px; }
+    .msg-group-title {
+      font-size: 11px;
+      color: #e94560;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      margin-bottom: 10px;
+      padding-bottom: 6px;
+      border-bottom: 2px solid #0f3460;
+      font-weight: bold;
+    }
+    
+    .msg-item {
+      background: #1a1a2e;
+      border-radius: 6px;
+      padding: 12px;
+      margin-bottom: 8px;
+      border-left: 3px solid #e94560;
+    }
+    .msg-text {
+      color: #fbbf24;
+      font-family: 'Courier New', monospace;
+      font-size: 12px;
+      margin-bottom: 8px;
+      padding: 6px 8px;
+      background: rgba(0,0,0,0.3);
+      border-radius: 4px;
+      line-height: 1.4;
+    }
+    .msg-meaning { 
+      color: #ccc; 
+      font-size: 12px; 
+      line-height: 1.5;
+      padding-left: 4px;
+    }
+    .msg-meaning code {
+      background: #0f3460;
+      padding: 2px 5px;
+      border-radius: 3px;
+      color: #e94560;
+      font-family: monospace;
+    }
+    
+    /* Trigger buttons */
+    .trigger-group { margin-bottom: 14px; }
+    .trigger-group-title {
+      font-size: 10px;
+      color: #888;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      margin-bottom: 6px;
+      padding-bottom: 4px;
+      border-bottom: 1px solid #0f3460;
+    }
+    .trigger-btn {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      width: 100%;
+      padding: 10px 12px;
+      margin-bottom: 4px;
+      background: #1a1a2e;
+      border: 1px solid #0f3460;
+      border-radius: 6px;
+      color: #ccc;
+      font-size: 12px;
+      cursor: pointer;
+      text-align: left;
+      transition: all 0.2s;
+    }
+    .trigger-btn:hover {
+      background: #0f3460;
+      border-color: #e94560;
+      color: #fff;
+    }
+    .trigger-btn.seen {
+      opacity: 0.5;
+      border-style: dashed;
+    }
+    .trigger-btn.seen::after {
+      content: ' ✓';
+      color: #4ade80;
+      margin-left: auto;
+    }
+    .trigger-btn span { font-size: 14px; }
+    
+    /* Quick Ref */
+    .quick-ref {
+      background: #0f3460;
+      padding: 10px;
+      border-top: 1px solid #1a1a2e;
+    }
+    .quick-ref h3 {
+      font-size: 10px;
+      color: #888;
+      margin-bottom: 6px;
+      text-transform: uppercase;
+    }
+    .quick-ref-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 3px;
+      font-size: 10px;
+    }
+    .quick-ref-item { display: flex; gap: 4px; align-items: center; }
+    .quick-ref-item code {
+      background: #1a1a2e;
+      padding: 2px 4px;
+      border-radius: 2px;
+      color: #e94560;
+      font-family: monospace;
+      min-width: 22px;
+      text-align: center;
+    }
+    
+    /* Popup */
+    .popup-overlay {
+      position: fixed;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background: rgba(0,0,0,0.85);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 100;
+    }
+    .popup-overlay.hidden { display: none; }
+    
+    .popup {
+      background: #16213e;
+      border: 2px solid #e94560;
+      border-radius: 12px;
+      padding: 20px;
+      max-width: 440px;
+      max-height: 80vh;
+      overflow-y: auto;
+    }
+    .popup h2 { color: #e94560; margin-bottom: 12px; font-size: 18px; }
+    .popup-body { font-size: 13px; line-height: 1.6; color: #ccc; }
+    .popup-body p { margin-bottom: 10px; }
+    .popup-body pre {
+      background: #0f3460;
+      padding: 10px;
+      border-radius: 5px;
+      font-family: monospace;
+      font-size: 12px;
+      margin: 10px 0;
+    }
+    .popup-body code { background: #0f3460; padding: 2px 5px; border-radius: 3px; color: #e94560; }
+    .popup-body ul { margin-left: 16px; margin-bottom: 10px; }
+    .popup-body li { margin: 4px 0; }
+    .popup-body .tip {
+      background: #2d1f3d;
+      border-left: 3px solid #e94560;
+      padding: 8px;
+      margin: 10px 0;
+      font-size: 12px;
+    }
+    .popup .close-btn {
+      background: #e94560;
+      color: white;
+      border: none;
+      padding: 10px 20px;
+      border-radius: 5px;
+      cursor: pointer;
+      font-size: 13px;
+      margin-top: 12px;
+      width: 100%;
+    }
+    .popup .close-btn:hover { background: #ff6b6b; }
+    
+    /* Graduation */
+    .graduation {
+      text-align: center;
+      padding: 20px;
+      background: linear-gradient(135deg, #0f3460, #16213e);
+      border-radius: 8px;
+      margin: 10px;
+      border: 2px solid #4ade80;
+    }
+    .graduation .trophy { font-size: 36px; margin-bottom: 8px; }
+    .graduation h3 { color: #4ade80; font-size: 18px; margin-bottom: 8px; }
+    .graduation p { color: #ccc; font-size: 12px; line-height: 1.5; }
+    
+    /* ========== MOBILE STYLES ========== */
+    
+    /* Mobile sidebar toggle button */
+    .mobile-sidebar-toggle {
+      display: none;
+      position: fixed;
+      bottom: 20px;
+      right: 20px;
+      background: #e94560;
+      color: white;
+      border: none;
+      width: 56px;
+      height: 56px;
+      border-radius: 50%;
+      font-size: 24px;
+      cursor: pointer;
+      z-index: 50;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.4);
+    }
+    
+    /* Mobile keyboard notice */
+    .mobile-keyboard-notice {
+      display: none;
+      background: #7c2d12;
+      border: 1px solid #ea580c;
+      border-radius: 8px;
+      padding: 12px;
+      margin: 10px;
+      text-align: center;
+    }
+    
+    .mobile-keyboard-notice h4 {
+      color: #fb923c;
+      font-size: 14px;
+      margin-bottom: 6px;
+    }
+    
+    .mobile-keyboard-notice p {
+      color: #fed7aa;
+      font-size: 12px;
+      line-height: 1.4;
+      margin-bottom: 8px;
+    }
+    
+    .mobile-keyboard-notice a {
+      color: #60a5fa;
+      text-decoration: underline;
+    }
+    
+    .mobile-alt-btn {
+      background: #e94560;
+      color: white;
+      border: none;
+      padding: 10px 20px;
+      border-radius: 6px;
+      font-size: 13px;
+      cursor: pointer;
+      margin-top: 8px;
+    }
+    
+    /* Mobile responsive layout */
+    @media (max-width: 900px) {
+      .container {
+        flex-direction: column;
+      }
+      
+      .game-header {
+        padding: 6px 12px;
+      }
+      
+      .game-header h1 {
+        font-size: 14px;
+      }
+      
+      .game-header .subtitle {
+        display: none;
+      }
+      
+      .header-btn {
+        padding: 5px 10px;
+        font-size: 11px;
+      }
+      
+      /* Game area takes remaining space */
+      .game-area {
+        flex: 1;
+        min-height: 0;
+      }
+      
+      .game-frame-container {
+        flex: 1;
+        min-height: 0;
+      }
+      
+      /* Hide floating help btn on mobile - use sidebar toggle instead */
+      .floating-help-btn {
+        display: none !important;
+      }
+      
+      /* Sidebar becomes slide-out panel */
+      .tutorial-sidebar {
+        position: fixed;
+        top: 0;
+        right: 0;
+        bottom: 0;
+        width: 280px;
+        transform: translateX(100%);
+        transition: transform 0.3s ease;
+        z-index: 100;
+        box-shadow: -4px 0 20px rgba(0,0,0,0.5);
+      }
+      
+      .tutorial-sidebar.open {
+        transform: translateX(0);
+      }
+      
+      .mobile-sidebar-toggle {
+        display: block;
+      }
+      
+      /* Mobile keyboard notice shows */
+      .mobile-keyboard-notice {
+        display: block;
+      }
+      
+      /* Floating tip repositioned above mobile toggle */
+      .floating-tip {
+        left: 10px;
+        right: 70px;
+        bottom: 10px;
+      }
+      
+      /* Game overlay adjustments */
+      .start-overlay {
+        padding: 16px;
+      }
+      
+      .start-box {
+        margin: 0;
+        padding: 20px;
+        padding-bottom: 24px;
+        max-height: 85vh;
+        max-height: 85dvh;
+        overflow-y: auto;
+        width: 100%;
+        max-width: 100%;
+        -webkit-overflow-scrolling: touch;
+      }
+      
+      .start-box h2 {
+        font-size: 20px;
+      }
+      
+      .start-box p {
+        font-size: 13px;
+      }
+      
+      .start-box .setup-box {
+        padding: 10px;
+      }
+      
+      .start-box .setup-box h3 {
+        font-size: 13px;
+      }
+      
+      .start-box .setup-box ol {
+        font-size: 12px;
+      }
+      
+      .start-btn {
+        padding: 12px 24px;
+        font-size: 15px;
+      }
+      
+      /* Click to focus adjustments */
+      .click-focus {
+        padding: 16px;
+      }
+      
+      .click-focus-box {
+        padding: 20px;
+        margin: 0;
+        width: 100%;
+        max-width: 100%;
+      }
+      
+      /* Popup adjustments */
+      .popup-overlay {
+        padding: 16px;
+      }
+      
+      .popup {
+        margin: 0;
+        max-width: 100%;
+        max-height: 80vh;
+        max-height: 80dvh;
+        width: 100%;
+      }
+      
+      .popup h2 {
+        font-size: 16px;
+      }
+      
+      .popup-body {
+        font-size: 12px;
+        max-height: 50vh;
+        overflow-y: auto;
+      }
+      
+      /* Sidebar content adjustments */
+      .sidebar-tabs {
+        flex-wrap: nowrap;
+      }
+      
+      .sidebar-tab {
+        padding: 8px 4px;
+        font-size: 10px;
+      }
+      
+      .quick-ref {
+        padding: 10px;
+      }
+      
+      .quick-ref-grid {
+        font-size: 9px;
+        gap: 3px;
+      }
+    }
+    
+    @media (max-width: 500px) {
+      .tutorial-sidebar {
+        width: 100%;
+      }
+      
+      .start-box .tips {
+        font-size: 12px;
+      }
+      
+      .start-box .tips li {
+        margin: 3px 0;
+      }
+    }
+    
+    /* Sidebar backdrop for mobile */
+    .sidebar-backdrop {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(0,0,0,0.5);
+      z-index: 99;
+    }
+    
+    .sidebar-backdrop.show {
+      display: block;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="game-area">
+      <div class="game-header">
+        <div>
+          <h1>🎮 NetHack Tutorial</h1>
+          <span class="subtitle">Family Tournament — Real NetHack 3.7</span>
+        </div>
+        <div class="header-buttons">
+          <button class="header-btn" id="tipToggle" onclick="toggleFloatingTip()">💡 Tips</button>
+          <button class="header-btn" onclick="toggleSidebar()">📚 Guide</button>
+        </div>
+      </div>
+      
+      <div class="game-frame-container">
+        <div class="game-overlay" id="startOverlay">
+          <div class="start-box">
+            <h2>⚔️ Welcome, Adventurer!</h2>
+            <p>You're about to play <strong>real NetHack 3.7</strong> compiled to run in your browser!</p>
+            
+            <!-- Mobile keyboard notice -->
+            <div class="mobile-keyboard-notice" id="mobileNotice">
+              <h4>📱 Playing on Mobile?</h4>
+              <p>The real NetHack requires a <strong>keyboard</strong>. Connect a Bluetooth keyboard to continue.</p>
+              <p style="margin-top:8px;">Or use our touch-friendly version instead:</p>
+              <button class="mobile-alt-btn" onclick="window.location.href='nethack-training-grounds.html'">🎮 Training Grounds (Touch)</button>
+            </div>
+            
+            <div class="goal">
+              <strong>🎯 Tutorial Goal:</strong> Reach <strong>Minetown</strong> in the Gnomish Mines!
+            </div>
+            
+            <div class="setup-box">
+              <h3>⚠️ First-Time Setup (Do This Once!)</h3>
+              <p>After character creation, immediately:</p>
+              <ol>
+                <li>Press <code>O</code> (capital O) → Options menu</li>
+                <li>Set <code>autopickup</code> to <strong>OFF</strong></li>
+                <li>Set <code>number_pad</code> to <strong>OFF</strong></li>
+                <li>Press <code>q</code> to save and quit options</li>
+              </ol>
+              <p style="margin-top: 8px; font-size: 12px; color: #999;">Settings are saved in your browser - only needed once!</p>
+            </div>
+            
+            <div class="tips">
+              <strong>Quick Start Tips:</strong>
+              <ul>
+                <li>Choose <strong>Valkyrie</strong> class (easiest for beginners)</li>
+                <li>Use <code>h j k l</code> to move (←↓↑→)</li>
+                <li>Walk INTO monsters to attack</li>
+                <li>Press <code>,</code> (comma) to pick up items</li>
+                <li>Press <code>Space</code> to advance prompts/messages</li>
+              </ul>
+            </div>
+            
+            <button class="start-btn" onclick="startGame()" ontouchend="startGame()">▶️ Start Playing!</button>
+            <p style="margin-top:12px;font-size:11px;color:#888;text-align:center;">
+              💡 Once you've created your character, click the <strong style="color:#e94560;">Tips</strong> button for help!
+            </p>
+          </div>
+        </div>
+        
+        <!-- Floating tip box -->
+        <div class="floating-tip" id="floatingTip">
+          <div class="tip-header">
+            <span class="tip-title" id="tipTitle">💡 Tip</span>
+            <button class="tip-close" onclick="hideFloatingTip()">×</button>
+          </div>
+          <div class="tip-content" id="tipContent"></div>
+          <div class="tip-nav">
+            <button onclick="prevTip()">← Prev</button>
+            <span id="tipCounter">1 / 10</span>
+            <button onclick="nextTip()">Next →</button>
+          </div>
+        </div>
+        
+        <!-- Click to focus overlay -->
+        <div class="click-focus hidden" id="clickFocus" onclick="focusGame()">
+          <div class="click-focus-box">
+            <div style="font-size:32px;margin-bottom:12px;">🎮</div>
+            <div style="font-size:16px;font-weight:bold;color:#e94560;margin-bottom:8px;">Game Loaded!</div>
+            <div style="font-size:13px;color:#ccc;margin-bottom:8px;">Tap anywhere to start</div>
+            <div style="font-size:12px;color:#888;">Then tap on the game area and use your keyboard</div>
+            <div id="mobileFocusNote" style="display:none;font-size:11px;color:#fb923c;margin-top:12px;padding:8px;background:#7c2d12;border-radius:6px;">
+              ⌨️ Bluetooth keyboard required on mobile
+            </div>
+          </div>
+        </div>
+        
+        <!-- Floating help button -->
+        <button class="floating-help-btn hidden" id="floatingHelpBtn" onclick="openHelpTab()">
+          ❓ What's happening?
+        </button>
+        
+        <iframe id="gameFrame" class="game-frame" src="about:blank"></iframe>
+      </div>
+    </div>
+    
+    <!-- Sidebar -->
+    <div class="tutorial-sidebar" id="sidebar">
+      <div class="sidebar-header">
+        <h2>📚 Tutorial Guide</h2>
+        <div class="search-box">
+          <input type="text" id="searchInput" placeholder="🔍 Search rules..." oninput="searchRules(this.value)">
+          <button class="search-clear" id="searchClear" onclick="clearSearch()">×</button>
+        </div>
+      </div>
+      
+      <!-- Search Results (hidden by default) -->
+      <div class="search-results hidden" id="searchResults">
+        <div class="search-results-header">
+          <span id="searchResultsCount">0 results</span>
+          <button class="search-back" onclick="clearSearch()">← Back</button>
+        </div>
+        <div class="search-results-list" id="searchResultsList"></div>
+      </div>
+      
+      <!-- Main sidebar content (hidden during search) -->
+      <div class="sidebar-main-content" id="sidebarMainContent">
+        <div class="sidebar-tabs">
+          <div class="sidebar-tab active" onclick="switchTab('lessons')">📖 Lessons</div>
+          <div class="sidebar-tab" onclick="switchTab('happening')">⚡ First!</div>
+          <div class="sidebar-tab" onclick="switchTab('messages')">💬 Msgs</div>
+          <div class="sidebar-tab" onclick="switchTab('symbols')">🔣</div>
+        </div>
+      
+      <!-- Lessons Tab -->
+      <div class="tab-content active" id="tab-lessons">
+        <div class="progress-section">
+          <div class="progress-title">Journey to Minetown</div>
+          <div class="progress-bar">
+            <div class="progress-fill" id="progressFill" style="width: 0%"></div>
+          </div>
+          <div class="progress-text" id="progressText">0 of 10 milestones</div>
+        </div>
+        <div class="lessons-container" id="lessonsContainer"></div>
+      </div>
+      
+      <!-- Help Me / What's Happening Tab -->
+      <div class="tab-content" id="tab-happening">
+        <div style="padding:10px;">
+          <p style="font-size:12px;color:#4ade80;margin-bottom:8px;text-align:center;font-weight:bold;">🆕 Click when something new happens!</p>
+          <p style="font-size:11px;color:#888;margin-bottom:12px;text-align:center;">First time seeing it? Click for instant advice!</p>
+          
+          <div class="trigger-group">
+            <div class="trigger-group-title">🆕 First Encounters</div>
+            <button class="trigger-btn" data-trigger="see-monster" onclick="triggerHelp('see-monster')">
+              <span>👹</span> I see a monster!
+            </button>
+            <button class="trigger-btn" data-trigger="see-item" onclick="triggerHelp('see-item')">
+              <span>📦</span> I found an item
+            </button>
+            <button class="trigger-btn" data-trigger="pet" onclick="triggerHelp('pet')">
+              <span>🐕</span> What's this creature following me?
+            </button>
+            <button class="trigger-btn" data-trigger="dark" onclick="triggerHelp('dark')">
+              <span>🌑</span> It's too dark to see!
+            </button>
+            <button class="trigger-btn" data-trigger="door" onclick="triggerHelp('door')">
+              <span>🚪</span> There's a door here
+            </button>
+            <button class="trigger-btn" data-trigger="stairs" onclick="triggerHelp('stairs')">
+              <span>🪜</span> I found stairs
+            </button>
+          </div>
+          
+          <div class="trigger-group">
+            <div class="trigger-group-title">⚠️ Problems</div>
+            <button class="trigger-btn" data-trigger="hungry" onclick="triggerHelp('hungry')">
+              <span>🍖</span> I'm getting hungry!
+            </button>
+            <button class="trigger-btn" data-trigger="low-hp" onclick="triggerHelp('low-hp')">
+              <span>💔</span> My HP is low!
+            </button>
+            <button class="trigger-btn" data-trigger="stuck" onclick="triggerHelp('stuck')">
+              <span>🚧</span> I'm stuck / dead end
+            </button>
+            <button class="trigger-btn" data-trigger="trapped" onclick="triggerHelp('trapped')">
+              <span>⚡</span> I triggered a trap!
+            </button>
+            <button class="trigger-btn" data-trigger="too-heavy" onclick="triggerHelp('too-heavy')">
+              <span>🏋️</span> I'm carrying too much
+            </button>
+            <button class="trigger-btn" data-trigger="cursed" onclick="triggerHelp('cursed')">
+              <span>😈</span> Something feels wrong/cursed
+            </button>
+          </div>
+          
+          <div class="trigger-group">
+            <div class="trigger-group-title">📍 Places</div>
+            <button class="trigger-btn" data-trigger="shop" onclick="triggerHelp('shop')">
+              <span>🏪</span> I found a shop!
+            </button>
+            <button class="trigger-btn" data-trigger="altar" onclick="triggerHelp('altar')">
+              <span>⛪</span> I found an altar
+            </button>
+            <button class="trigger-btn" data-trigger="fountain" onclick="triggerHelp('fountain')">
+              <span>⛲</span> I found a fountain
+            </button>
+            <button class="trigger-btn" data-trigger="sink" onclick="triggerHelp('sink')">
+              <span>🚰</span> I found a sink
+            </button>
+            <button class="trigger-btn" data-trigger="mines" onclick="triggerHelp('mines')">
+              <span>⛏️</span> I think I'm in the mines!
+            </button>
+            <button class="trigger-btn" data-trigger="minetown" onclick="triggerHelp('minetown')">
+              <span>🏘️</span> I found Minetown!
+            </button>
+          </div>
+          
+          <div class="trigger-group">
+            <div class="trigger-group-title">😵 Oops</div>
+            <button class="trigger-btn" data-trigger="died" onclick="triggerHelp('died')">
+              <span>💀</span> I died!
+            </button>
+            <button class="trigger-btn" data-trigger="attacked-pet" onclick="triggerHelp('attacked-pet')">
+              <span>😿</span> I attacked my pet!
+            </button>
+            <button class="trigger-btn" data-trigger="shopkeeper-angry" onclick="triggerHelp('shopkeeper-angry')">
+              <span>😠</span> The shopkeeper is angry!
+            </button>
+          </div>
+        </div>
+      </div>
+      
+      <!-- Messages Tab -->
+      <div class="tab-content" id="tab-messages">
+        <div class="messages-container">
+          <div class="msg-group">
+            <div class="msg-group-title">🍖 Hunger Messages</div>
+            <div class="msg-item">
+              <div class="msg-text">"You are beginning to feel hungry."</div>
+              <div class="msg-meaning">You should eat soon. Press <code>e</code> to eat.</div>
+            </div>
+            <div class="msg-item">
+              <div class="msg-text">"You are weak from hunger."</div>
+              <div class="msg-meaning">DANGER! Eat immediately or you'll faint and die!</div>
+            </div>
+            <div class="msg-item">
+              <div class="msg-text">"You faint from lack of food."</div>
+              <div class="msg-meaning">CRITICAL! You're passing out. Eat the moment you wake!</div>
+            </div>
+          </div>
+          
+          <div class="msg-group">
+            <div class="msg-group-title">⚔️ Combat Messages</div>
+            <div class="msg-item">
+              <div class="msg-text">"You hit the [monster]."</div>
+              <div class="msg-meaning">Your attack landed! Keep fighting.</div>
+            </div>
+            <div class="msg-item">
+              <div class="msg-text">"You miss the [monster]."</div>
+              <div class="msg-meaning">Your attack missed. Keep trying!</div>
+            </div>
+            <div class="msg-item">
+              <div class="msg-text">"The [monster] hits/bites/claws you!"</div>
+              <div class="msg-meaning">You took damage. Check your HP!</div>
+            </div>
+            <div class="msg-item">
+              <div class="msg-text">"You kill the [monster]!"</div>
+              <div class="msg-meaning">Victory! You may get experience points.</div>
+            </div>
+          </div>
+          
+          <div class="msg-group">
+            <div class="msg-group-title">📦 Item Messages</div>
+            <div class="msg-item">
+              <div class="msg-text">"You see here a [item]."</div>
+              <div class="msg-meaning">There's an item on this tile. Press <code>,</code> to pick up.</div>
+            </div>
+            <div class="msg-item">
+              <div class="msg-text">"[Item]: a]"</div>
+              <div class="msg-meaning">Item added to inventory with letter 'a'. Press <code>i</code> to see it.</div>
+            </div>
+            <div class="msg-item">
+              <div class="msg-text">"You have a little trouble lifting..."</div>
+              <div class="msg-meaning">You're carrying too much! Drop something with <code>d</code>.</div>
+            </div>
+          </div>
+          
+          <div class="msg-group">
+            <div class="msg-group-title">🚪 Dungeon Messages</div>
+            <div class="msg-item">
+              <div class="msg-text">"The door opens."</div>
+              <div class="msg-meaning">You opened the door successfully.</div>
+            </div>
+            <div class="msg-item">
+              <div class="msg-text">"The door resists!"</div>
+              <div class="msg-meaning">Door is stuck or locked. Try again or kick it (<code>D</code>).</div>
+            </div>
+            <div class="msg-item">
+              <div class="msg-text">"You found a secret door!"</div>
+              <div class="msg-meaning">Your searching paid off! A hidden passage is revealed.</div>
+            </div>
+            <div class="msg-item">
+              <div class="msg-text">"You feel more confident..."</div>
+              <div class="msg-meaning">You gained an experience level! You're stronger now.</div>
+            </div>
+          </div>
+          
+          <div class="msg-group">
+            <div class="msg-group-title">⚠️ Warning Messages</div>
+            <div class="msg-item">
+              <div class="msg-text">"You hear someone counting money."</div>
+              <div class="msg-meaning">A shop is nearby! Careful not to steal.</div>
+            </div>
+            <div class="msg-item">
+              <div class="msg-text">"You hear the splashing of a fountain."</div>
+              <div class="msg-meaning">Fountain nearby. Can drink (<code>q</code>) or dip items.</div>
+            </div>
+            <div class="msg-item">
+              <div class="msg-text">"You feel worried about your [pet]."</div>
+              <div class="msg-meaning">Your pet is far away or in danger. Go find them!</div>
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      <!-- Symbols Tab -->
+      <div class="tab-content" id="tab-symbols">
+        <div class="messages-container">
+          <div class="msg-group">
+            <div class="msg-group-title">👤 Characters</div>
+            <div class="msg-item"><div class="msg-text">@</div><div class="msg-meaning">You, the adventurer!</div></div>
+            <div class="msg-item"><div class="msg-text">d</div><div class="msg-meaning">Dog (often your pet)</div></div>
+            <div class="msg-item"><div class="msg-text">f</div><div class="msg-meaning">Cat/feline (sometimes your pet)</div></div>
+            <div class="msg-item"><div class="msg-text">G</div><div class="msg-meaning">Gnome (common in mines)</div></div>
+            <div class="msg-item"><div class="msg-text">h</div><div class="msg-meaning">Dwarf or hobbit</div></div>
+            <div class="msg-item"><div class="msg-text">o</div><div class="msg-meaning">Orc</div></div>
+          </div>
+          
+          <div class="msg-group">
+            <div class="msg-group-title">🏛️ Dungeon</div>
+            <div class="msg-item"><div class="msg-text">.</div><div class="msg-meaning">Floor - safe to walk</div></div>
+            <div class="msg-item"><div class="msg-text">#</div><div class="msg-meaning">Corridor</div></div>
+            <div class="msg-item"><div class="msg-text">- |</div><div class="msg-meaning">Walls</div></div>
+            <div class="msg-item"><div class="msg-text">+</div><div class="msg-meaning">Closed door - press <code>o</code> to open</div></div>
+            <div class="msg-item"><div class="msg-text">'</div><div class="msg-meaning">Open door</div></div>
+            <div class="msg-item"><div class="msg-text">></div><div class="msg-meaning">Stairs DOWN - press <code>></code> to descend</div></div>
+            <div class="msg-item"><div class="msg-text"><</div><div class="msg-meaning">Stairs UP - press <code><</code> to ascend</div></div>
+            <div class="msg-item"><div class="msg-text">{</div><div class="msg-meaning">Fountain - can drink or dip items</div></div>
+            <div class="msg-item"><div class="msg-text">_</div><div class="msg-meaning">Altar - for praying and sacrificing</div></div>
+            <div class="msg-item"><div class="msg-text"># <span style="color:#888;font-size:10px;">(cyan)</span></div><div class="msg-meaning">Sink - kick for rings, quaff/dip with caution</div></div>
+          </div>
+          
+          <div class="msg-group">
+            <div class="msg-group-title">📦 Items</div>
+            <div class="msg-item"><div class="msg-text">$</div><div class="msg-meaning">Gold</div></div>
+            <div class="msg-item"><div class="msg-text">%</div><div class="msg-meaning">Food (comestible)</div></div>
+            <div class="msg-item"><div class="msg-text">)</div><div class="msg-meaning">Weapon</div></div>
+            <div class="msg-item"><div class="msg-text">[</div><div class="msg-meaning">Armor</div></div>
+            <div class="msg-item"><div class="msg-text">!</div><div class="msg-meaning">Potion - press <code>q</code> to quaff</div></div>
+            <div class="msg-item"><div class="msg-text">?</div><div class="msg-meaning">Scroll - press <code>r</code> to read</div></div>
+            <div class="msg-item"><div class="msg-text">/</div><div class="msg-meaning">Wand - press <code>z</code> to zap</div></div>
+            <div class="msg-item"><div class="msg-text">=</div><div class="msg-meaning">Ring - press <code>P</code> to put on</div></div>
+            <div class="msg-item"><div class="msg-text">(</div><div class="msg-meaning">Tool (pick-axe, lamp, etc.)</div></div>
+            <div class="msg-item"><div class="msg-text">*</div><div class="msg-meaning">Gem or rock</div></div>
+          </div>
+        </div>
+      </div>
+      
+      <div class="quick-ref">
+        <h3>⌨️ Quick Keys</h3>
+        <div class="quick-ref-grid">
+          <div class="quick-ref-item"><code>hjkl</code> Move</div>
+          <div class="quick-ref-item"><code>yubn</code> Diagonal</div>
+          <div class="quick-ref-item"><code>,</code> Pick up</div>
+          <div class="quick-ref-item"><code>i</code> Inventory</div>
+          <div class="quick-ref-item"><code>e</code> Eat</div>
+          <div class="quick-ref-item"><code>q</code> Quaff</div>
+          <div class="quick-ref-item"><code>w</code> Wield</div>
+          <div class="quick-ref-item"><code>W</code> Wear</div>
+          <div class="quick-ref-item"><code>o</code> Open</div>
+          <div class="quick-ref-item"><code>s</code> Search</div>
+          <div class="quick-ref-item"><code>></code> Descend</div>
+          <div class="quick-ref-item"><code><</code> Ascend</div>
+        </div>
+      </div>
+      </div><!-- end sidebar-main-content -->
+    </div>
+  </div>
+  
+  <!-- Popup -->
+  <div class="popup-overlay hidden" id="popupOverlay" onclick="closePopup(event)">
+    <div class="popup" onclick="event.stopPropagation()">
+      <h2 id="popupTitle"></h2>
+      <div class="popup-body" id="popupContent"></div>
+      <button class="close-btn" onclick="closePopup()">Got it! ✓</button>
+    </div>
+  </div>
+  
+  <!-- Mobile sidebar toggle -->
+  <button class="mobile-sidebar-toggle" id="mobileSidebarToggle" onclick="toggleMobileSidebar()">📚</button>
+  
+  <!-- Sidebar backdrop -->
+  <div class="sidebar-backdrop" id="sidebarBackdrop" onclick="closeMobileSidebar()"></div>
+
+  <script>
+    // === DATA ===
+    const lessons = [
+      { id: 'movement', icon: '🕹️', title: 'Movement Basics', summary: 'Learn to move your character',
+        content: `<p>You are the <code>@</code>. Move with:</p><pre>  y  k  u
+   \\ | /
+  h -@- l
+   / | \\
+  b  j  n</pre><p><strong>Walk INTO monsters to attack!</strong></p><div class="tip">💡 Diagonal movement is crucial for escaping!</div>` },
+      { id: 'symbols', icon: '👁️', title: 'Reading the Map', summary: 'What the symbols mean',
+        content: `<pre>@ = You    d = Dog
+. = Floor  # = Corridor
++ = Door   > = Stairs down
+$ = Gold   % = Food
+) = Weapon [ = Armor
+! = Potion ? = Scroll</pre><div class="tip">💡 Press <code>/</code> then click any symbol to identify it!</div>` },
+      { id: 'pet', icon: '🐕', title: 'Your Pet', summary: 'Your loyal companion',
+        content: `<p>Your pet (<code>d</code> dog or <code>f</code> cat) will:</p><ul><li>Follow you around</li><li>Fight enemies</li><li>Warn about cursed items</li></ul><div class="tip">⚠️ Don't attack your pet by accident!</div>` },
+      { id: 'items', icon: '📦', title: 'Items & Inventory', summary: 'Collecting loot',
+        content: `<p><code>,</code> — Pick up item</p><p><code>i</code> — View inventory</p><p><code>d</code> — Drop item</p><p><code>w</code> — Wield weapon</p><p><code>W</code> — Wear armor</p><div class="tip">💡 Collect everything early — you never know what saves your life!</div>` },
+      { id: 'combat', icon: '⚔️', title: 'Combat', summary: 'Fighting monsters',
+        content: `<p><strong>Walk into enemies to attack!</strong></p><p>Make sure you've wielded a weapon (<code>w</code>) and worn armor (<code>W</code>).</p><div class="tip">💡 Watch your HP! If low, retreat up the stairs!</div>` },
+      { id: 'hunger', icon: '🍖', title: 'Food & Hunger', summary: "Don't starve!",
+        content: `<p>Watch for hunger messages:</p><ul><li><strong>Hungry</strong> — eat soon</li><li><strong>Weak</strong> — eat NOW</li><li><strong>Fainting</strong> — CRITICAL!</li></ul><p>Press <code>e</code> to eat from inventory.</p><div class="tip">💡 Food rations (%) are always safe. Corpses can be risky!</div>` },
+      { id: 'doors', icon: '🚪', title: 'Doors & Searching', summary: 'Navigate the dungeon',
+        content: `<p><code>o</code> — Open door</p><p><code>c</code> — Close door</p><p><code>s</code> — Search for secrets</p><div class="tip">💡 Press <code>s</code> multiple times near walls to find hidden doors!</div>` },
+      { id: 'stairs', icon: '🪜', title: 'Using Stairs', summary: 'Go deeper',
+        content: `<p><code>></code> — Go down (on > tile)</p><p><code><</code> — Go up (on < tile)</p><div class="tip">💡 Explore each level thoroughly before descending!</div>` },
+      { id: 'mines', icon: '⛏️', title: 'The Gnomish Mines', summary: 'Find the entrance',
+        content: `<p>Around dungeon levels 2-4, you'll find stairs to the <strong>Gnomish Mines</strong>.</p><p>The mines have gnomes, dwarves, gems, and lead to <strong>Minetown</strong>!</p><div class="tip">💡 Mines can be dark. Wait for eyes to adjust.</div>` },
+      { id: 'minetown', icon: '🏘️', title: 'Minetown!', summary: 'Your destination',
+        content: `<p>🎉 <strong>Congratulations!</strong></p><p>Minetown has shops, a temple, and friendly NPCs.</p><p>Tutorial complete! Now explore the rest of the dungeon...</p><div class="tip">🏆 Mark complete when you arrive!</div>` }
+    ];
+    
+    const tips = [
+      { title: "💡 Movement Keys", content: "Use <code>h j k l</code> for left/down/up/right. Use <code>y u b n</code> for diagonals. Arrow keys work but can't go diagonal!" },
+      { title: "⚔️ Combat Tip", content: "Walk INTO monsters to attack. Make sure you've pressed <code>w</code> to wield a weapon first!" },
+      { title: "🍖 Don't Starve!", content: "If you see 'Hungry' or 'Weak', immediately press <code>e</code> to eat something from your inventory!" },
+      { title: "📦 Picking Up Items", content: "Press <code>,</code> (comma) to pick up items. Press <code>i</code> to see your inventory." },
+      { title: "🚪 Opening Doors", content: "Press <code>o</code> then a direction to open a closed door (<code>+</code>)." },
+      { title: "🔍 Search for Secrets", content: "Press <code>s</code> multiple times near walls to find hidden doors and passages!" },
+      { title: "🪜 Using Stairs", content: "Stand on <code>></code> and press <code>></code> to go down. Stand on <code><</code> and press <code><</code> to go up." },
+      { title: "💊 Healing", content: "If hurt, drink a healing potion with <code>q</code>. Or wait in place with <code>.</code> to slowly heal." },
+      { title: "🐕 Your Pet", content: "Don't attack your pet! They help fight and will refuse to walk on cursed items." },
+      { title: "⛏️ Finding the Mines", content: "The Gnomish Mines entrance appears around dungeon levels 2-4. Look for <code>></code> stairs!" },
+      { title: "🏃 Running Away", content: "If HP is low, go UP the stairs to escape! Retreat is wisdom, not cowardice." },
+      { title: "✨ Elbereth", content: "In emergencies, press <code>E</code> and write 'Elbereth'. Most monsters will fear this word!" },
+      { title: "💰 Shops", content: "In Minetown, pick up items then pay at the door. DON'T leave without paying!" },
+      { title: "🎯 Class Recommendation", content: "Valkyrie is the easiest class for beginners. Good HP, starts with good equipment!" }
+    ];
+    
+    // Contextual help triggers
+    const triggerData = {
+      'see-monster': {
+        title: "👹 You See a Monster!",
+        content: `<p>Letters on the map are usually monsters!</p>
+          <ul>
+            <li><strong>Lowercase</strong> = smaller creatures (d=dog, f=cat, o=orc)</li>
+            <li><strong>UPPERCASE</strong> = bigger/dangerous (D=dragon, G=gnome)</li>
+          </ul>
+          <p><strong>To attack:</strong> Walk INTO the monster! Just move toward it.</p>
+          <p><strong>To run:</strong> Move away! Go up stairs (<code><</code>) if needed.</p>
+          <div class="tip">💡 Make sure you've wielded a weapon (<code>w</code>) for more damage!</div>`
+      },
+      'see-item': {
+        title: "📦 You Found an Item!",
+        content: `<p>Items appear as symbols on the floor:</p>
+          <pre>$=Gold  %=Food  )=Weapon  [=Armor
+!=Potion  ?=Scroll  /=Wand  ==Ring</pre>
+          <p><strong>To pick up:</strong> Stand on it and press <code>,</code> (comma)</p>
+          <p><strong>To use:</strong> Press <code>i</code> for inventory, then:</p>
+          <ul>
+            <li><code>w</code> = wield weapon</li>
+            <li><code>W</code> = wear armor</li>
+            <li><code>e</code> = eat food</li>
+            <li><code>q</code> = quaff (drink) potion</li>
+            <li><code>r</code> = read scroll</li>
+          </ul>`
+      },
+      'pet': {
+        title: "🐕 That's Your Pet!",
+        content: `<p>The <code>d</code> (dog) or <code>f</code> (cat) following you is your loyal pet!</p>
+          <p>Your pet will:</p>
+          <ul>
+            <li>Follow you around the dungeon</li>
+            <li>Attack enemies for you</li>
+            <li>Refuse to step on cursed items (useful!)</li>
+          </ul>
+          <div class="tip">⚠️ Be careful not to attack your pet! Move around them carefully.</div>
+          <p>If your pet is far away, wait (<code>.</code>) for them to catch up.</p>`
+      },
+      'dark': {
+        title: "🌑 It's Dark!",
+        content: `<p>Some areas (especially the Mines) are dark.</p>
+          <p><strong>Options:</strong></p>
+          <ul>
+            <li>Wait a moment - your eyes may adjust</li>
+            <li>Use a lamp or candle if you have one (<code>a</code> to apply)</li>
+            <li>Cast a light spell if you know one</li>
+            <li>Move carefully and memorize the layout</li>
+          </ul>
+          <div class="tip">💡 In dark areas, you can only see adjacent squares. Go slowly!</div>`
+      },
+      'door': {
+        title: "🚪 A Door!",
+        content: `<p>The <code>+</code> symbol is a closed door.</p>
+          <p><strong>To open:</strong> Press <code>o</code> then the direction of the door.</p>
+          <p>If it won't open:</p>
+          <ul>
+            <li>It might be locked - try kicking (<code>D</code> then direction)</li>
+            <li>It might be stuck - keep trying <code>o</code></li>
+          </ul>
+          <p>Press <code>c</code> to close doors behind you (useful for escaping!).</p>`
+      },
+      'stairs': {
+        title: "🪜 You Found Stairs!",
+        content: `<p><code>></code> = stairs going DOWN (deeper into dungeon)</p>
+          <p><code><</code> = stairs going UP (back toward surface)</p>
+          <p><strong>To use:</strong> Stand on them and press the same symbol:</p>
+          <ul>
+            <li>On <code>></code> → press <code>></code> to descend</li>
+            <li>On <code><</code> → press <code><</code> to ascend</li>
+          </ul>
+          <div class="tip">💡 Explore each level thoroughly before going down! Going up is how you escape danger.</div>`
+      },
+      'hungry': {
+        title: "🍖 You're Hungry!",
+        content: `<p><strong>This is urgent!</strong> Starvation = death.</p>
+          <p>Hunger stages:</p>
+          <ul>
+            <li><strong>Hungry</strong> - eat soon</li>
+            <li><strong>Weak</strong> - eat NOW!</li>
+            <li><strong>Fainting</strong> - you'll pass out and die!</li>
+          </ul>
+          <p><strong>To eat:</strong> Press <code>e</code> and select food from inventory.</p>
+          <p>Safe foods: Food rations, lembas wafers, K/C rations.</p>
+          <div class="tip">⚠️ Monster corpses can be risky - some are poisonous!</div>`
+      },
+      'low-hp': {
+        title: "💔 Low Health!",
+        content: `<p><strong>Danger!</strong> You need to heal or escape!</p>
+          <p><strong>Options:</strong></p>
+          <ul>
+            <li><code>q</code> = Quaff a healing potion</li>
+            <li><code><</code> = Go up stairs to escape</li>
+            <li><code>.</code> = Rest in place (heals slowly if not hungry)</li>
+            <li><code>E</code> = Engrave "Elbereth" to scare monsters away</li>
+          </ul>
+          <div class="tip">💡 Running away is smart! Go up the stairs and heal before returning.</div>`
+      },
+      'stuck': {
+        title: "🚧 Stuck? Dead End?",
+        content: `<p>There might be a secret door!</p>
+          <p><strong>To find secrets:</strong> Press <code>s</code> to search.</p>
+          <p>Search the same spot multiple times (5-10 times) - secrets aren't always found on the first try!</p>
+          <p><strong>Look for:</strong></p>
+          <ul>
+            <li>Walls that could hide doors</li>
+            <li>Suspicious dead ends</li>
+            <li>Rooms with only one exit</li>
+          </ul>
+          <div class="tip">💡 Many rooms have multiple exits hidden in the walls!</div>`
+      },
+      'trapped': {
+        title: "⚡ You Hit a Trap!",
+        content: `<p>Traps are hidden until you step on them (or search for them).</p>
+          <p><strong>Common traps:</strong></p>
+          <ul>
+            <li>Pit - you fall in (move to climb out)</li>
+            <li>Arrow trap - shoots arrows at you</li>
+            <li>Teleport - zaps you somewhere random</li>
+            <li>Trap door - drops you to next level!</li>
+          </ul>
+          <p><strong>Prevention:</strong> Press <code>s</code> to search before walking into suspicious areas.</p>
+          <div class="tip">💡 Once revealed, you can see traps as <code>^</code> symbols.</div>`
+      },
+      'too-heavy': {
+        title: "🏋️ Carrying Too Much!",
+        content: `<p>You're burdened! This slows you down.</p>
+          <p><strong>To fix:</strong></p>
+          <ul>
+            <li><code>d</code> = Drop items you don't need</li>
+            <li><code>i</code> = Check inventory for heavy items</li>
+          </ul>
+          <p><strong>Heavy items:</strong> Armor, large weapons, lots of gold, rocks.</p>
+          <div class="tip">💡 You can stash items on the ground and come back for them later!</div>`
+      },
+      'cursed': {
+        title: "😈 Cursed Item!",
+        content: `<p>Cursed items can't be removed once equipped!</p>
+          <p><strong>Signs of cursed items:</strong></p>
+          <ul>
+            <li>"You can't remove it!" message</li>
+            <li>Your pet refuses to pick it up</li>
+            <li>It welds to your hand</li>
+          </ul>
+          <p><strong>Solutions:</strong></p>
+          <ul>
+            <li>Read a scroll of remove curse</li>
+            <li>Pray at an altar (risky)</li>
+            <li>Dip in holy water</li>
+          </ul>
+          <div class="tip">💡 Let your pet walk over items first - they avoid cursed ones!</div>`
+      },
+      'shop': {
+        title: "🏪 You Found a Shop!",
+        content: `<p>Shops have items for sale! The shopkeeper watches everything.</p>
+          <p><strong>To buy:</strong></p>
+          <ol>
+            <li>Pick up items you want (<code>,</code>)</li>
+            <li>Walk to the door</li>
+            <li>The shopkeeper tells you the price</li>
+            <li>Press <code>p</code> to pay</li>
+          </ol>
+          <p><strong>To sell:</strong> Drop items on the floor, shopkeeper offers to buy.</p>
+          <div class="tip">⚠️ DON'T leave without paying! The shopkeeper will attack!</div>`
+      },
+      'altar': {
+        title: "⛪ You Found an Altar!",
+        content: `<p>Altars (<code>_</code>) are for religious activities.</p>
+          <p><strong>Uses:</strong></p>
+          <ul>
+            <li><code>#pray</code> - Pray (can heal you if your god is happy)</li>
+            <li><code>d</code> - Drop items to sacrifice corpses</li>
+            <li>Identify item status (BUC) by placing on altar</li>
+          </ul>
+          <p>Altars can be co-aligned (your god), cross-aligned (other god), or unaligned.</p>
+          <div class="tip">💡 Don't pray too often or your god gets angry!</div>`
+      },
+      'fountain': {
+        title: "⛲ You Found a Fountain!",
+        content: `<p>Fountains (<code>{</code>) contain water with magical properties.</p>
+          <p><strong>Actions:</strong></p>
+          <ul>
+            <li><code>q</code> - Quaff (drink) from fountain - random effects!</li>
+            <li><code>#dip</code> - Dip items in water</li>
+          </ul>
+          <p><strong>Warning:</strong> Drinking can have random good OR bad effects!</p>
+          <div class="tip">💡 Early on, it's usually safer to leave fountains alone.</div>`
+      },
+      'sink': {
+        title: "🚰 You Found a Sink!",
+        content: `<p>Sinks (<code>#</code> but colored cyan) are found in kitchens and Minetown.</p>
+          <p><strong>Actions:</strong></p>
+          <ul>
+            <li><code>D</code> (kick) - Kick the sink! May produce a ring, pudding, or break it</li>
+            <li><code>q</code> - Quaff from sink - various effects</li>
+            <li><code>#dip</code> - Dip items (weapons get wet, rings may reveal type)</li>
+          </ul>
+          <p><strong>Pro tip:</strong> Kicking sinks is a classic way to get rings early!</p>
+          <div class="tip">💡 If a black pudding appears, be careful - they multiply when hit with iron weapons!</div>`
+      },
+      'mines': {
+        title: "⛏️ The Gnomish Mines!",
+        content: `<p>You've entered the Gnomish Mines branch!</p>
+          <p><strong>Characteristics:</strong></p>
+          <ul>
+            <li>Rocky, irregular tunnels (not rectangular rooms)</li>
+            <li>Darker than main dungeon</li>
+            <li>Gnomes (<code>G</code>) and dwarves (<code>h</code>)</li>
+            <li>Gems (<code>*</code>) scattered around</li>
+          </ul>
+          <p><strong>Minetown</strong> is ~4-5 levels down in the mines!</p>
+          <div class="tip">💡 Dwarves can be tough. Be careful and run if needed!</div>`
+      },
+      'minetown': {
+        title: "🏘️ Welcome to Minetown!",
+        content: `<p>🎉 <strong>CONGRATULATIONS!</strong> You found Minetown!</p>
+          <p>Minetown is a peaceful settlement with:</p>
+          <ul>
+            <li>Shops for buying/selling</li>
+            <li>A temple with altar</li>
+            <li>Peaceful inhabitants (mostly)</li>
+          </ul>
+          <p><strong>Tutorial goal achieved!</strong></p>
+          <p>Don't forget to mark the "Minetown" lesson complete in the Lessons tab!</p>
+          <div class="tip">🏆 You now know enough to keep exploring on your own!</div>`
+      },
+      'died': {
+        title: "💀 You Died!",
+        content: `<p>Don't worry - death is part of learning NetHack!</p>
+          <p><strong>What happened?</strong> Read the death message.</p>
+          <p><strong>Common causes:</strong></p>
+          <ul>
+            <li>Not running away when HP was low</li>
+            <li>Starvation (forgot to eat)</li>
+            <li>Fighting too many monsters at once</li>
+            <li>Eating poisonous corpses</li>
+          </ul>
+          <p><strong>Next time:</strong> Start a new game and try again!</p>
+          <div class="tip">💡 NetHack saying: "The DevTeam thinks of everything!" Death teaches you what to avoid.</div>`
+      },
+      'attacked-pet': {
+        title: "😿 You Attacked Your Pet!",
+        content: `<p>Accidents happen! Your pet might be upset.</p>
+          <p><strong>How to avoid:</strong></p>
+          <ul>
+            <li>Move carefully around your pet</li>
+            <li>Let your pet move out of the way first</li>
+            <li>Use <code>.</code> to wait if pet is in your path</li>
+          </ul>
+          <p>If your pet turns hostile, you may need to avoid them until they calm down.</p>
+          <div class="tip">💡 Feeding your pet treats (like tripe rations) keeps them loyal!</div>`
+      },
+      'shopkeeper-angry': {
+        title: "😠 Angry Shopkeeper!",
+        content: `<p><strong>This is very dangerous!</strong> Shopkeepers are powerful.</p>
+          <p><strong>What happened?</strong></p>
+          <ul>
+            <li>You left without paying</li>
+            <li>You attacked them or their property</li>
+            <li>You stole something</li>
+          </ul>
+          <p><strong>Options:</strong></p>
+          <ul>
+            <li><code>p</code> - Try to pay what you owe</li>
+            <li>RUN AWAY - go up stairs immediately</li>
+            <li>Don't fight unless you're very strong</li>
+          </ul>
+          <div class="tip">⚠️ Shopkeepers remember! They stay angry even if you leave.</div>`
+      }
+    };
+    
+    let seenTriggers = new Set();
+    
+    // === STATE ===
+    let completedLessons = new Set();
+    let expandedLesson = null;
+    let currentTip = 0;
+    let tipsVisible = false;
+    let gameStarted = false;
+    
+    // === INIT ===
+    function init() {
+      renderLessons();
+      updateProgress();
+      loadSavedProgress();
+      updateTip();
+    }
+    
+    function loadSavedProgress() {
+      const saved = localStorage.getItem('nethackTutorialProgress');
+      if (saved) {
+        completedLessons = new Set(JSON.parse(saved));
+        renderLessons();
+        updateProgress();
+      }
+    }
+    
+    function saveProgress() {
+      localStorage.setItem('nethackTutorialProgress', JSON.stringify([...completedLessons]));
+    }
+    
+    // === GAME ===
+    let tipInterval = null;
+    
+    function startGame() {
+      // Prevent double firing from touch + click
+      if (gameStarted) return;
+      
+      document.getElementById('startOverlay').classList.add('hidden');
+      const frame = document.getElementById('gameFrame');
+      
+      // Show click-to-focus when iframe loads
+      frame.onload = function() {
+        setTimeout(() => {
+          document.getElementById('clickFocus').classList.remove('hidden');
+          // Show mobile keyboard note if on mobile
+          if (checkMobile()) {
+            document.getElementById('mobileFocusNote').style.display = 'block';
+          }
+        }, 500);
+      };
+      
+      frame.src = 'https://guillaumebrunerie.github.io/nethack/';
+      gameStarted = true;
+    }
+    
+    function focusGame() {
+      document.getElementById('clickFocus').classList.add('hidden');
+      
+      // Try to focus the iframe
+      const frame = document.getElementById('gameFrame');
+      frame.focus();
+      
+      // Show a brief reminder
+      showFocusReminder();
+      
+      // Make Tips button pulse after 10 seconds to remind them
+      setTimeout(() => {
+        const tipBtn = document.getElementById('tipToggle');
+        if (!tipsVisible) {
+          tipBtn.classList.add('pulse');
+        }
+      }, 10000);
+      
+      // Auto-show tips after character creation is likely done (~40 sec)
+      setTimeout(() => {
+        if (!tipsVisible && completedLessons.size === 0) {
+          showFloatingTip();
+          // Auto-cycle tips every 30 seconds
+          tipInterval = setInterval(() => {
+            if (tipsVisible) nextTip();
+          }, 30000);
+        }
+      }, 40000);
+    }
+    
+    function showFocusReminder() {
+      // Create a temporary reminder at the top
+      const reminder = document.createElement('div');
+      reminder.innerHTML = '👆 <strong>Click on the game</strong> if your keyboard isn\'t working';
+      reminder.style.cssText = 'position:absolute;top:10px;left:50%;transform:translateX(-50%);background:#e94560;color:white;padding:8px 16px;border-radius:20px;font-size:12px;z-index:6;';
+      document.querySelector('.game-frame-container').appendChild(reminder);
+      
+      // Show floating help button
+      document.getElementById('floatingHelpBtn').classList.remove('hidden');
+      
+      // Fade out reminder after 5 seconds
+      setTimeout(() => {
+        reminder.style.transition = 'opacity 1s';
+        reminder.style.opacity = '0';
+        setTimeout(() => reminder.remove(), 1000);
+      }, 5000);
+    }
+    
+    function openHelpTab() {
+      const sidebar = document.getElementById('sidebar');
+      // Make sure sidebar is visible
+      if (window.innerWidth <= 900) {
+        sidebar.classList.add('open');
+        document.getElementById('sidebarBackdrop').classList.add('show');
+      } else {
+        sidebar.classList.remove('collapsed');
+      }
+      // Switch to Help Me tab
+      switchTab('happening');
+    }
+    
+    // Detect mobile on load
+    function checkMobile() {
+      const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) 
+        || window.innerWidth <= 900;
+      return isMobile;
+    }
+    
+    // Manual trigger for when player is ready
+    function showFirstLessonNow() {
+      if (!completedLessons.has('movement')) {
+        showPopup('movement');
+      }
+    }
+    
+    // === SIDEBAR TABS ===
+    function switchTab(tabName) {
+      document.querySelectorAll('.sidebar-tab').forEach(t => t.classList.remove('active'));
+      document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+      
+      const tabIndex = { lessons: 1, happening: 2, messages: 3, symbols: 4 }[tabName];
+      document.querySelector(`.sidebar-tab:nth-child(${tabIndex})`).classList.add('active');
+      document.getElementById('tab-' + tabName).classList.add('active');
+    }
+    
+    function toggleSidebar() {
+      // On desktop, collapse/expand
+      if (window.innerWidth > 900) {
+        document.getElementById('sidebar').classList.toggle('collapsed');
+      } else {
+        // On mobile, use slide-out
+        toggleMobileSidebar();
+      }
+    }
+    
+    function toggleMobileSidebar() {
+      const sidebar = document.getElementById('sidebar');
+      const backdrop = document.getElementById('sidebarBackdrop');
+      sidebar.classList.toggle('open');
+      backdrop.classList.toggle('show');
+    }
+    
+    function closeMobileSidebar() {
+      document.getElementById('sidebar').classList.remove('open');
+      document.getElementById('sidebarBackdrop').classList.remove('show');
+    }
+    
+    // === LESSONS ===
+    function renderLessons() {
+      const container = document.getElementById('lessonsContainer');
+      
+      if (completedLessons.size === lessons.length) {
+        container.innerHTML = `<div class="graduation"><div class="trophy">🏆</div><h3>Tutorial Complete!</h3><p>You've mastered the basics!</p><p style="margin-top:8px;font-size:11px;"><a href="#" onclick="resetProgress();return false;" style="color:#e94560;">Reset progress</a></p></div>`;
+        return;
+      }
+      
+      container.innerHTML = lessons.map((lesson, i) => {
+        const done = completedLessons.has(lesson.id);
+        const active = !done && (i === 0 || completedLessons.has(lessons[i-1].id));
+        const expanded = expandedLesson === lesson.id;
+        
+        return `<div class="lesson-card ${done ? 'completed' : ''} ${active ? 'active' : ''}">
+          <div class="lesson-header" onclick="toggleLesson('${lesson.id}')">
+            <span class="lesson-title"><span>${lesson.icon}</span> ${lesson.title}</span>
+            ${done ? '<span class="lesson-check">✓</span>' : ''}
+          </div>
+          <div class="lesson-content ${expanded ? 'expanded' : ''}">
+            <p style="color:#888;font-style:italic;margin-bottom:6px;">${lesson.summary}</p>
+            ${lesson.content}
+            ${!done ? '<button class="mark-done-btn" onclick="markComplete(\''+lesson.id+'\');event.stopPropagation();">✓ I learned this!</button>' : ''}
+          </div>
+        </div>`;
+      }).join('');
+    }
+    
+    function toggleLesson(id) {
+      expandedLesson = expandedLesson === id ? null : id;
+      renderLessons();
+    }
+    
+    function markComplete(id) {
+      completedLessons.add(id);
+      saveProgress();
+      renderLessons();
+      updateProgress();
+      
+      const idx = lessons.findIndex(l => l.id === id);
+      if (idx < lessons.length - 1) {
+        setTimeout(() => showPopup(lessons[idx + 1].id), 500);
+      }
+    }
+    
+    function updateProgress() {
+      const pct = (completedLessons.size / lessons.length) * 100;
+      document.getElementById('progressFill').style.width = pct + '%';
+      document.getElementById('progressText').textContent = `${completedLessons.size} of ${lessons.length} milestones`;
+    }
+    
+    function resetProgress() {
+      if (confirm('Reset all progress?')) {
+        completedLessons = new Set();
+        localStorage.removeItem('nethackTutorialProgress');
+        renderLessons();
+        updateProgress();
+      }
+    }
+    
+    // === POPUP ===
+    function showPopup(id) {
+      const lesson = lessons.find(l => l.id === id);
+      if (!lesson || completedLessons.has(id)) return;
+      document.getElementById('popupTitle').innerHTML = `${lesson.icon} ${lesson.title}`;
+      document.getElementById('popupContent').innerHTML = lesson.content;
+      document.getElementById('popupOverlay').classList.remove('hidden');
+    }
+    
+    function triggerHelp(triggerId) {
+      const data = triggerData[triggerId];
+      if (!data) return;
+      
+      // Mark as seen
+      seenTriggers.add(triggerId);
+      localStorage.setItem('nethackSeenTriggers', JSON.stringify([...seenTriggers]));
+      
+      // Update button appearance
+      const btn = document.querySelector(`[data-trigger="${triggerId}"]`);
+      if (btn) btn.classList.add('seen');
+      
+      // Show popup
+      document.getElementById('popupTitle').innerHTML = data.title;
+      document.getElementById('popupContent').innerHTML = data.content;
+      document.getElementById('popupOverlay').classList.remove('hidden');
+    }
+    
+    function loadSeenTriggers() {
+      const saved = localStorage.getItem('nethackSeenTriggers');
+      if (saved) {
+        seenTriggers = new Set(JSON.parse(saved));
+        seenTriggers.forEach(id => {
+          const btn = document.querySelector(`[data-trigger="${id}"]`);
+          if (btn) btn.classList.add('seen');
+        });
+      }
+    }
+    
+    function closePopup(e) {
+      if (e && e.target !== e.currentTarget) return;
+      document.getElementById('popupOverlay').classList.add('hidden');
+    }
+    
+    // === FLOATING TIP ===
+    function showFloatingTip() {
+      tipsVisible = true;
+      document.getElementById('floatingTip').classList.add('show');
+      document.getElementById('tipToggle').classList.add('active');
+      document.getElementById('tipToggle').classList.remove('pulse');
+      updateTip();
+    }
+    
+    function hideFloatingTip() {
+      tipsVisible = false;
+      document.getElementById('floatingTip').classList.remove('show');
+      document.getElementById('tipToggle').classList.remove('active');
+    }
+    
+    function toggleFloatingTip() {
+      if (tipsVisible) hideFloatingTip();
+      else showFloatingTip();
+    }
+    
+    function updateTip() {
+      const tip = tips[currentTip];
+      document.getElementById('tipTitle').innerHTML = tip.title;
+      document.getElementById('tipContent').innerHTML = tip.content;
+      document.getElementById('tipCounter').textContent = `${currentTip + 1} / ${tips.length}`;
+    }
+    
+    function nextTip() {
+      currentTip = (currentTip + 1) % tips.length;
+      updateTip();
+    }
+    
+    function prevTip() {
+      currentTip = (currentTip - 1 + tips.length) % tips.length;
+      updateTip();
+    }
+    
+    // === KEYS ===
+    document.addEventListener('keydown', e => {
+      if (e.key === 'Escape') closePopup();
+    });
+    
+    // === SEARCH FUNCTIONALITY ===
+    const searchableContent = [
+      // Lessons
+      ...lessons.map(l => ({
+        category: 'Lesson',
+        title: l.title,
+        content: l.content.replace(/<[^>]+>/g, ' '),
+        icon: l.icon,
+        action: () => showPopup(l.id)
+      })),
+      // Triggers (First Encounters)
+      ...Object.entries(triggerData).map(([id, data]) => ({
+        category: 'First Encounter',
+        title: data.title,
+        content: data.content.replace(/<[^>]+>/g, ' '),
+        action: () => triggerHelp(id)
+      })),
+      // Messages - add manually since they're in HTML
+      { category: 'Message', title: 'Hunger Warning', content: 'You are beginning to feel hungry. Eat food soon or you will weaken and eventually starve.', action: () => switchTab('messages') },
+      { category: 'Message', title: 'Combat Hit', content: 'You hit the monster. You are attacking in melee combat. Keep walking into the enemy.', action: () => switchTab('messages') },
+      { category: 'Message', title: 'Monster Killed', content: 'You kill the monster. Victory! The enemy is defeated. You may gain experience points.', action: () => switchTab('messages') },
+      { category: 'Message', title: 'Item Found', content: 'You see here an item. Press comma to pick it up. Check your inventory with i.', action: () => switchTab('messages') },
+      { category: 'Message', title: 'Secret Door', content: 'You find a secret door. Hidden passage discovered by searching with s key.', action: () => switchTab('messages') },
+      { category: 'Message', title: 'Money Sound', content: 'You hear someone counting money. A shop is nearby on this level.', action: () => switchTab('messages') },
+      // Symbols
+      { category: 'Symbol', title: '@ - Player', content: 'You, the player character. This is your position on the map.', action: () => switchTab('symbols') },
+      { category: 'Symbol', title: 'd - Dog/Pet', content: 'Your pet dog. It follows you and helps fight. Dont attack it!', action: () => switchTab('symbols') },
+      { category: 'Symbol', title: 'G - Gnome', content: 'A gnome monster. Common in the Gnomish Mines. Can be dangerous.', action: () => switchTab('symbols') },
+      { category: 'Symbol', title: '> - Stairs Down', content: 'Stairs leading down to deeper levels. Stand on them and press > to descend.', action: () => switchTab('symbols') },
+      { category: 'Symbol', title: '< - Stairs Up', content: 'Stairs leading up to earlier levels. Stand on them and press < to ascend.', action: () => switchTab('symbols') },
+      { category: 'Symbol', title: '+ - Closed Door', content: 'A closed door. Press o then a direction to open it.', action: () => switchTab('symbols') },
+      { category: 'Symbol', title: '$ - Gold', content: 'Gold pieces. Pick up with comma key. Used to buy items in shops.', action: () => switchTab('symbols') },
+      { category: 'Symbol', title: '% - Food', content: 'Food item. Pick up and eat with e when hungry to avoid starvation.', action: () => switchTab('symbols') },
+      { category: 'Symbol', title: ') - Weapon', content: 'A weapon. Pick up and wield with w key to increase attack damage.', action: () => switchTab('symbols') },
+      { category: 'Symbol', title: '[ - Armor', content: 'Armor piece. Pick up and wear with W key to reduce damage taken.', action: () => switchTab('symbols') },
+      { category: 'Symbol', title: '! - Potion', content: 'A potion. Drink with q key. Effects vary - healing potions restore HP.', action: () => switchTab('symbols') },
+      { category: 'Symbol', title: '? - Scroll', content: 'A scroll. Read with r key. Various magical effects.', action: () => switchTab('symbols') },
+      { category: 'Symbol', title: '{ - Fountain', content: 'A fountain. Can drink from or dip items. Random effects, use with caution.', action: () => switchTab('symbols') },
+      { category: 'Symbol', title: '_ - Altar', content: 'An altar. Used for religious activities, sacrificing, and identifying item status.', action: () => switchTab('symbols') },
+      { category: 'Symbol', title: '# - Sink', content: 'A sink (also # like corridors but different color). Kick it for random items like rings. Quaff from it or dip items with various effects. Found in Minetown and kitchens.', action: () => switchTab('symbols') },
+      { category: 'Key Command', title: 'D - Kick', content: 'Kick something. Kick doors to break them down, kick sinks for rings, kick monsters. Press D then direction.', action: () => switchTab('lessons') },
+      // Keys/Commands
+      { category: 'Key Command', title: 'h j k l - Movement', content: 'Move left down up right. Basic movement keys. hjkl like vim editor.', action: () => switchTab('lessons') },
+      { category: 'Key Command', title: 'y u b n - Diagonal', content: 'Move diagonally. y=up-left, u=up-right, b=down-left, n=down-right.', action: () => switchTab('lessons') },
+      { category: 'Key Command', title: ', (comma) - Pick Up', content: 'Pick up items from the ground. Essential command for collecting loot.', action: () => switchTab('lessons') },
+      { category: 'Key Command', title: 'i - Inventory', content: 'View your inventory. See all items you are carrying.', action: () => switchTab('lessons') },
+      { category: 'Key Command', title: 'e - Eat', content: 'Eat food from inventory. Use when hungry to avoid starvation.', action: () => switchTab('lessons') },
+      { category: 'Key Command', title: 'q - Quaff', content: 'Drink a potion. Quaff healing potions to restore HP.', action: () => switchTab('lessons') },
+      { category: 'Key Command', title: 'w - Wield', content: 'Wield a weapon. Equip weapon from inventory for combat.', action: () => switchTab('lessons') },
+      { category: 'Key Command', title: 'W - Wear', content: 'Wear armor. Equip armor from inventory for protection.', action: () => switchTab('lessons') },
+      { category: 'Key Command', title: 'o - Open', content: 'Open a door. Press o then direction of the closed door.', action: () => switchTab('lessons') },
+      { category: 'Key Command', title: 's - Search', content: 'Search for hidden doors and traps. May need to search multiple times.', action: () => switchTab('lessons') },
+      { category: 'Key Command', title: 'O - Options', content: 'Open options menu. Set autopickup off and configure number_pad.', action: () => switchTab('lessons') },
+      { category: 'Key Command', title: 'E - Engrave', content: 'Engrave on the floor. Write Elbereth to scare monsters away.', action: () => switchTab('lessons') },
+    ];
+    
+    function searchRules(query) {
+      const searchInput = document.getElementById('searchInput');
+      const clearBtn = document.getElementById('searchClear');
+      const results = document.getElementById('searchResults');
+      const resultsList = document.getElementById('searchResultsList');
+      const resultsCount = document.getElementById('searchResultsCount');
+      const mainContent = document.getElementById('sidebarMainContent');
+      
+      query = query.trim().toLowerCase();
+      
+      // Show/hide clear button
+      if (query.length > 0) {
+        clearBtn.classList.add('show');
+      } else {
+        clearBtn.classList.remove('show');
+      }
+      
+      // Need at least 2 characters
+      if (query.length < 2) {
+        results.classList.add('hidden');
+        mainContent.classList.remove('hidden');
+        return;
+      }
+      
+      // Search
+      const matches = searchableContent.filter(item => {
+        return item.title.toLowerCase().includes(query) || 
+               item.content.toLowerCase().includes(query);
+      });
+      
+      // Show results
+      results.classList.remove('hidden');
+      mainContent.classList.add('hidden');
+      
+      resultsCount.textContent = `${matches.length} result${matches.length !== 1 ? 's' : ''}`;
+      
+      if (matches.length === 0) {
+        resultsList.innerHTML = `<div class="search-no-results">No results found for "${query}"</div>`;
+        return;
+      }
+      
+      resultsList.innerHTML = matches.map(item => {
+        // Create preview with highlighted match
+        let preview = item.content.substring(0, 100);
+        const matchIdx = item.content.toLowerCase().indexOf(query);
+        if (matchIdx > 50) {
+          preview = '...' + item.content.substring(matchIdx - 20, matchIdx + 80);
+        }
+        if (item.content.length > 100) preview += '...';
+        
+        // Highlight match
+        const regex = new RegExp(`(${query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})`, 'gi');
+        preview = preview.replace(regex, '<mark>$1</mark>');
+        
+        return `
+          <div class="search-result-item" onclick="handleSearchResult(${searchableContent.indexOf(item)})">
+            <div class="category">${item.category}</div>
+            <div class="title">${item.icon || ''} ${item.title}</div>
+            <div class="preview">${preview}</div>
+          </div>
+        `;
+      }).join('');
+    }
+    
+    function handleSearchResult(index) {
+      const item = searchableContent[index];
+      clearSearch();
+      if (item.action) {
+        item.action();
+      }
+    }
+    
+    function clearSearch() {
+      document.getElementById('searchInput').value = '';
+      document.getElementById('searchClear').classList.remove('show');
+      document.getElementById('searchResults').classList.add('hidden');
+      document.getElementById('sidebarMainContent').classList.remove('hidden');
+    }
+
+    // Start
+    init();
+    loadSeenTriggers();
+  </script>
+</body>
+</html>
